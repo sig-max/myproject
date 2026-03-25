@@ -1,0 +1,1 @@
+"""Intake logs blueprint package."""
