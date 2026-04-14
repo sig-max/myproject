@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../auth_wrapper.dart';
 import '../providers/auth_provider.dart';
 import '../utils/validators.dart';
 import '../widgets/custom_button.dart';
-import 'dashboard_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -44,7 +44,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (success) {
-      Navigator.of(context).pushReplacementNamed(DashboardScreen.routeName);
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AuthWrapper.routeName, (_) => false);
       return;
     }
 

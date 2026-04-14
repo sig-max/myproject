@@ -22,6 +22,7 @@ class AuthService {
     required String name,
     required String email,
     required String password,
+    required String role,
   }) async {
     final response = await _apiService.post(
       '/auth/register',
@@ -29,21 +30,49 @@ class AuthService {
         'name': name,
         'email': email,
         'password': password,
+        'role': role,
       },
     );
 
-    return _parseAuthResponse(response, fallbackName: name, fallbackEmail: email);
+    return _parseAuthResponse(
+      response,
+      fallbackName: name,
+      fallbackEmail: email,
+    );
+  }
+
+  Future<UserModel> getCurrentUser() async {
+    final response = await _apiService.get('/users/me');
+    if (response is! Map<String, dynamic>) {
+      throw const ApiException('Unexpected user response');
+    }
+
+    return UserModel.fromJson(response);
+  }
+
+  Future<UserModel> updateCurrentUser(Map<String, dynamic> payload) async {
+    final response = await _apiService.put('/users/me', body: payload);
+    if (response is! Map<String, dynamic>) {
+      throw const ApiException('Unexpected user update response');
+    }
+
+    final userRaw = response['user'];
+    if (userRaw is! Map<String, dynamic>) {
+      throw const ApiException('Updated user payload missing');
+    }
+
+    return UserModel.fromJson(userRaw);
   }
 
   Future<void> logout() => _apiService.clearToken();
 
   Future<void> setToken(String token) => _apiService.setToken(token);
 
-  UserModel _parseAuthResponse(
+  Future<UserModel> _parseAuthResponse(
     dynamic response, {
     String? fallbackName,
     String? fallbackEmail,
-  }) {
+  }) async {
     Map<String, dynamic> map;
     if (response is Map<String, dynamic>) {
       map = response;
@@ -63,7 +92,7 @@ class AuthService {
     });
 
     if (token != null && token.isNotEmpty) {
-      _apiService.setToken(token);
+      await _apiService.setToken(token);
     }
 
     return user;

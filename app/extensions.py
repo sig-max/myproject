@@ -27,6 +27,18 @@ def initialize_indexes() -> None:
     )
     if not has_unique_email_index:
         _safe_create_index(db["users"], [("email", 1)], unique=True, name="users_email_unique_idx")
+    _safe_create_index(
+        db["patient_profiles"],
+        [("user_id", 1)],
+        unique=True,
+        name="patient_profiles_user_unique_idx",
+    )
+    _safe_create_index(
+        db["specialist_profiles"],
+        [("user_id", 1)],
+        unique=True,
+        name="specialist_profiles_user_unique_idx",
+    )
 
     _safe_create_index(
         db["medicines"],
@@ -42,6 +54,21 @@ def initialize_indexes() -> None:
         db["expenses"],
         [("user_id", 1), ("date", -1)],
         name="expenses_user_date_idx",
+    )
+    _safe_create_index(
+        db["appointment_slots"],
+        [("specialist_user_id", 1), ("start_at", 1)],
+        name="appointment_slots_specialist_start_idx",
+    )
+    _safe_create_index(
+        db["appointments"],
+        [("specialist_user_id", 1), ("created_at", -1)],
+        name="appointments_specialist_created_idx",
+    )
+    _safe_create_index(
+        db["appointments"],
+        [("patient_user_id", 1), ("created_at", -1)],
+        name="appointments_patient_created_idx",
     )
 
 

@@ -39,8 +39,12 @@ class AuthProvider extends ChangeNotifier {
 
       _token = token;
       await _authService.setToken(token);
+      _user = await _authService.getCurrentUser();
       _status = AuthStatus.authenticated;
     } catch (_) {
+      await _authService.logout();
+      _token = null;
+      _user = null;
       _status = AuthStatus.unauthenticated;
     }
 
@@ -74,6 +78,7 @@ class AuthProvider extends ChangeNotifier {
     required String name,
     required String email,
     required String password,
+    required String role,
   }) async {
     _status = AuthStatus.loading;
     _error = null;
@@ -84,6 +89,7 @@ class AuthProvider extends ChangeNotifier {
         name: name,
         email: email,
         password: password,
+        role: role,
       );
       _user = user;
       _token = user.token;
@@ -97,6 +103,32 @@ class AuthProvider extends ChangeNotifier {
     }
 
     _status = AuthStatus.unauthenticated;
+    notifyListeners();
+    return false;
+  }
+
+  Future<bool> updateCurrentUser(Map<String, dynamic> payload) async {
+    _error = null;
+    notifyListeners();
+
+    try {
+      final updatedUser = await _authService.updateCurrentUser(payload);
+      _user = UserModel(
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        profile: updatedUser.profile,
+        token: _token,
+      );
+      notifyListeners();
+      return true;
+    } on ApiException catch (error) {
+      _error = error.message;
+    } catch (_) {
+      _error = 'Profile update failed. Please try again.';
+    }
+
     notifyListeners();
     return false;
   }

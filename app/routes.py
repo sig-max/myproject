@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 from flask_jwt_extended import JWTManager
 
+from app.blueprints.appointments.routes import appointments_bp
 from app.blueprints.auth.routes import auth_bp
 from app.blueprints.expenses.routes import expenses_bp
 from app.blueprints.intake_logs.routes import intake_logs_bp
@@ -20,7 +21,8 @@ def register_core_routes(app: Flask) -> None:
 
 def register_blueprints(app: Flask) -> None:
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
-    app.register_blueprint(users_bp, url_prefix="/api/users")
+    app.register_blueprint(users_bp, url_prefix="/api/v1/users")
+    app.register_blueprint(appointments_bp, url_prefix="/api/v1/appointments")
     app.register_blueprint(medicines_bp, url_prefix="/api/v1/medicines")
     app.register_blueprint(reminders_bp, url_prefix="/api/v1/reminders")
     app.register_blueprint(intake_logs_bp, url_prefix="/api/v1/intake-logs")

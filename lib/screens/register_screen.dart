@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../auth_wrapper.dart';
 import '../providers/auth_provider.dart';
 import '../utils/validators.dart';
 import '../widgets/custom_button.dart';
-import 'dashboard_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,6 +16,8 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  String _selectedRole = 'patient';
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -41,17 +43,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
+      role: _selectedRole,
     );
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     if (success) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        DashboardScreen.routeName,
-        (_) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AuthWrapper.routeName, (_) => false);
       return;
     }
 
@@ -73,10 +73,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
             key: _formKey,
             child: Column(
               children: [
+                const Text(
+                  'Register As',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: const Text('Patient'),
+                        value: 'patient',
+                        groupValue: _selectedRole,
+                        onChanged: (value) => setState(() => _selectedRole = value!),
+                      ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: const Text('Specialist'),
+                        value: 'specialist',
+                        groupValue: _selectedRole,
+                        onChanged: (value) => setState(() => _selectedRole = value!),
+                      ),
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Name'),
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
+                  ),
                   validator: (value) =>
                       Validators.requiredField(value, fieldName: 'Name'),
                 ),
@@ -84,22 +112,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
                   validator: Validators.email,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Password'),
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    border: OutlineInputBorder(),
+                  ),
                   validator: Validators.password,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _confirmController,
                   obscureText: true,
-                  decoration:
-                      const InputDecoration(labelText: 'Confirm Password'),
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm Password',
+                    border: OutlineInputBorder(),
+                  ),
                   validator: (value) {
                     if (value != _passwordController.text) {
                       return 'Passwords do not match';

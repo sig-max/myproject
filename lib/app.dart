@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'auth_wrapper.dart';
 import 'config/flavor_config.dart';
 import 'providers/auth_provider.dart';
 import 'providers/checklist_provider.dart';
 import 'providers/expense_provider.dart';
 import 'providers/medicine_provider.dart';
+import 'screens/appointment_history_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/specialist_availability_screen.dart';
+import 'screens/specialist_dashboard_screen.dart';
+import 'screens/specialist_discovery_screen.dart';
+import 'screens/specialist_profile_screen.dart';
 import 'services/api_service.dart';
 import 'services/auth_service.dart';
 import 'services/checklist_service.dart';
@@ -60,11 +66,24 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
           useMaterial3: true,
         ),
-        home: const DashboardScreen(),
+        initialRoute: AuthWrapper.routeName,
         routes: {
+          AuthWrapper.routeName: (_) => const AuthWrapper(),
           LoginScreen.routeName: (_) => const LoginScreen(),
           RegisterScreen.routeName: (_) => const RegisterScreen(),
+          AppointmentHistoryScreen.patientRouteName: (_) =>
+              const AppointmentHistoryScreen(role: 'patient'),
+          AppointmentHistoryScreen.specialistRouteName: (_) =>
+              const AppointmentHistoryScreen(role: 'specialist'),
           DashboardScreen.routeName: (_) => const DashboardScreen(),
+          SpecialistDashboardScreen.routeName: (_) =>
+              const SpecialistDashboardScreen(),
+          SpecialistAvailabilityScreen.routeName: (_) =>
+              const SpecialistAvailabilityScreen(),
+          SpecialistDiscoveryScreen.routeName: (_) =>
+              const SpecialistDiscoveryScreen(),
+          SpecialistProfileScreen.routeName: (_) =>
+              const SpecialistProfileScreen(),
         },
       ),
     );

@@ -22,6 +22,7 @@ import '../widgets/upcoming_medicine_widget.dart';
 import 'add_medicine_screen.dart';
 import 'daily_checkbook_screen.dart';
 import 'expense_screen.dart';
+import 'specialist_discovery_screen.dart';
 
 class HealthOverviewScreen extends StatefulWidget {
   const HealthOverviewScreen({
@@ -306,15 +307,46 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen> {
             if (medicines.isEmpty && checklistItems.isEmpty) {
               return ListView(
                 padding: const EdgeInsets.all(24),
-                children: const [
-                  SizedBox(height: 80),
-                  Icon(Icons.health_and_safety_outlined, size: 56),
-                  SizedBox(height: 12),
-                  Center(
+                children: [
+                  const SizedBox(height: 80),
+                  const Icon(Icons.health_and_safety_outlined, size: 56),
+                  const SizedBox(height: 12),
+                  const Center(
                     child: Text(
                       'No health data available yet. Add medicines to get started.',
                       textAlign: TextAlign.center,
                     ),
+                  ),
+                  const SizedBox(height: 24),
+                  DashboardActionButtons(
+                    onAddMedicine: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AddMedicineScreen(),
+                        ),
+                      );
+                    },
+                    onAddExpense: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ExpenseScreen(),
+                        ),
+                      );
+                    },
+                    onAddChecklistTask: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const DailyCheckbookScreen(),
+                        ),
+                      );
+                    },
+                    onFindSpecialist: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SpecialistDiscoveryScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               );
@@ -359,6 +391,14 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen> {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => const DailyCheckbookScreen(),
+                                  ),
+                                );
+                              },
+                              onFindSpecialist: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const SpecialistDiscoveryScreen(),
                                   ),
                                 );
                               },
@@ -439,6 +479,13 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const DailyCheckbookScreen(),
+                      ),
+                    );
+                  },
+                  onFindSpecialist: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const SpecialistDiscoveryScreen(),
                       ),
                     );
                   },

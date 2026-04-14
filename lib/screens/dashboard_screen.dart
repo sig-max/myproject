@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import 'appointment_history_screen.dart';
 import 'daily_checkbook_screen.dart';
 import 'expense_screen.dart';
 import 'health_overview_screen.dart';
@@ -113,6 +114,18 @@ class _ProfileTab extends StatelessWidget {
             title: Text('Profile'),
             subtitle: Text('Manage your session and app settings'),
           ),
+        ),
+        const SizedBox(height: 12),
+        FilledButton.tonalIcon(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AppointmentHistoryScreen(role: 'patient'),
+              ),
+            );
+          },
+          icon: const Icon(Icons.calendar_month_outlined),
+          label: const Text('My Appointments'),
         ),
         const SizedBox(height: 12),
         FilledButton.icon(

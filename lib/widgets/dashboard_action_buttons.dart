@@ -6,11 +6,13 @@ class DashboardActionButtons extends StatelessWidget {
     required this.onAddMedicine,
     required this.onAddExpense,
     required this.onAddChecklistTask,
+    this.onFindSpecialist,
   });
 
   final VoidCallback onAddMedicine;
   final VoidCallback onAddExpense;
   final VoidCallback onAddChecklistTask;
+  final VoidCallback? onFindSpecialist;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +57,12 @@ class DashboardActionButtons extends StatelessWidget {
                   icon: const Icon(Icons.checklist_outlined),
                   label: const Text('Add Checklist Task'),
                 ),
+                if (onFindSpecialist != null)
+                  OutlinedButton.icon(
+                    onPressed: onFindSpecialist,
+                    icon: const Icon(Icons.person_search_outlined),
+                    label: const Text('Find Specialist'),
+                  ),
               ],
             ),
           ],
