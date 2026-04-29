@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
@@ -27,6 +28,7 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
 
   bool _initialized = false;
   bool _isSaving = false;
+  String? _error;
 
   @override
   void didChangeDependencies() {
@@ -64,45 +66,52 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isSaving = true);
+    FocusScope.of(context).unfocus();
 
-    final success = await context.read<AuthProvider>().updateCurrentUser({
-      'full_name': _nameController.text.trim(),
-      'phone': _phoneController.text.trim(),
-      'specialization': _specializationController.text.trim(),
-      'years_of_experience': int.tryParse(_experienceController.text.trim()) ?? 0,
-      'consultation_fee': double.tryParse(_feeController.text.trim()) ?? 0,
-      'city': _cityController.text.trim(),
-      'state': _stateController.text.trim(),
-      'languages': _splitCsv(_languagesController.text),
-      'bio': _bioController.text.trim(),
+    setState(() {
+      _isSaving = true;
+      _error = null;
     });
 
-    if (!mounted) {
-      return;
-    }
+    try {
+      final ok = await context.read<AuthProvider>().updateCurrentUser({
+        'full_name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'specialization': _specializationController.text.trim(),
+        'years_of_experience': int.tryParse(_experienceController.text.trim()) ?? 0,
+        'consultation_fee': double.tryParse(_feeController.text.trim()) ?? 0,
+        'city': _cityController.text.trim(),
+        'state': _stateController.text.trim(),
+        'languages': _splitCsv(_languagesController.text),
+        'bio': _bioController.text.trim(),
+      });
 
-    setState(() => _isSaving = false);
+      if (!mounted) return;
 
-    if (success) {
+      if (!ok) {
+        setState(() => _error = 'Unable to save profile changes.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to save profile changes')),
+        );
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Specialist profile updated')),
+        const SnackBar(content: Text('Profile updated successfully')),
       );
-      Navigator.of(context).pop();
-      return;
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error while saving: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          context.read<AuthProvider>().error ?? 'Unable to update profile',
-        ),
-      ),
-    );
   }
 
   @override
@@ -126,8 +135,13 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
                 _buildField(
                   controller: _phoneController,
                   label: 'Phone',
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                  ],
                   validator: (value) =>
-                      Validators.requiredField(value, fieldName: 'Phone'),
+                      Validators.phone(value, fieldName: 'Phone'),
                 ),
                 const SizedBox(height: 12),
                 _buildField(
@@ -225,11 +239,15 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
     required TextEditingController controller,
     required String label,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    int? maxLength,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      maxLength: maxLength,
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),

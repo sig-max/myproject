@@ -3,7 +3,8 @@ import re
 from app.utils.errors import ValidationError
 
 
-EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+EMAIL_REGEX = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
+PHONE_REGEX = re.compile(r"^[6-9]\d{9}$")
 
 
 def require_fields(data: dict, fields: list[str]) -> None:
@@ -13,8 +14,27 @@ def require_fields(data: dict, fields: list[str]) -> None:
 
 
 def validate_email(email: str) -> None:
-    if not isinstance(email, str) or not EMAIL_REGEX.match(email):
+    if not isinstance(email, str):
         raise ValidationError("Invalid email address")
+
+    normalized = email.strip()
+    if not EMAIL_REGEX.match(normalized):
+        raise ValidationError("Invalid email address")
+
+    local_part, _, domain_part = normalized.partition("@")
+    if ".." in normalized or local_part.startswith(".") or local_part.endswith("."):
+        raise ValidationError("Invalid email address")
+    if domain_part.startswith(".") or domain_part.endswith(".") or "." not in domain_part:
+        raise ValidationError("Invalid email address")
+
+
+def validate_phone(field_name: str, value) -> None:
+    if not isinstance(value, str):
+        raise ValidationError(f"{field_name} must be a string")
+
+    normalized = re.sub(r"\s+", "", value.strip())
+    if not PHONE_REGEX.match(normalized):
+        raise ValidationError(f"{field_name} must be a valid 10-digit mobile number")
 
 
 def validate_string(field_name: str, value, min_length: int = 1, max_length: int = 255) -> None:

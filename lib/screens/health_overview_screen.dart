@@ -22,6 +22,7 @@ import '../widgets/upcoming_medicine_widget.dart';
 import 'add_medicine_screen.dart';
 import 'daily_checkbook_screen.dart';
 import 'expense_screen.dart';
+import 'home_sample_request_screen.dart';
 import 'specialist_discovery_screen.dart';
 
 class HealthOverviewScreen extends StatefulWidget {
@@ -347,6 +348,13 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen> {
                         ),
                       );
                     },
+                    onBookHomeTest: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const HomeSampleRequestScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               );
@@ -399,6 +407,14 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen> {
                                   MaterialPageRoute(
                                     builder: (_) =>
                                         const SpecialistDiscoveryScreen(),
+                                  ),
+                                );
+                              },
+                              onBookHomeTest: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const HomeSampleRequestScreen(),
                                   ),
                                 );
                               },
@@ -486,6 +502,13 @@ class _HealthOverviewScreenState extends State<HealthOverviewScreen> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const SpecialistDiscoveryScreen(),
+                      ),
+                    );
+                  },
+                  onBookHomeTest: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const HomeSampleRequestScreen(),
                       ),
                     );
                   },

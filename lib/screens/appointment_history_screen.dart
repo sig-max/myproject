@@ -26,6 +26,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
   List<AppointmentModel> _appointments = [];
   bool _isLoading = false;
   String? _error;
+  String? _acceptingAppointmentId;
 
   @override
   void initState() {
@@ -65,6 +66,29 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
         _error = 'Unable to load appointments';
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _acceptAppointment(String appointmentId) async {
+    setState(() => _acceptingAppointmentId = appointmentId);
+    try {
+      await _service.acceptAppointment(appointmentId);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Appointment accepted')),
+      );
+      setState(() => _acceptingAppointmentId = null);
+      _loadAppointments();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _acceptingAppointmentId = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
     }
   }
 
@@ -120,7 +144,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
                           ),
                         ),
                       ),
-                      Chip(label: Text(appointment.status)),
+                      Chip(label: Text(_statusLabel(appointment.status))),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -136,10 +160,39 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
                         : appointment.notes,
                   ),
                   const SizedBox(height: 8),
+                  if (appointment.status == 'pending' &&
+                      appointment.autoAcceptAt != null)
+                    Text(
+                      widget.role == 'specialist'
+                          ? 'Accept within 1 hour or this request will be auto-accepted at ${DateFormat('d MMM, h:mm a').format(appointment.autoAcceptAt!)}'
+                          : 'Waiting for specialist response. This will be auto-accepted at ${DateFormat('d MMM, h:mm a').format(appointment.autoAcceptAt!)}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  if (appointment.status == 'accepted' &&
+                      appointment.acceptedAt != null)
+                    Text(
+                      'Accepted on ${DateFormat('d MMM yyyy, h:mm a').format(appointment.acceptedAt!)}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  const SizedBox(height: 8),
                   Text(
                     'Booked on ${DateFormat('d MMM yyyy, h:mm a').format(appointment.createdAt)}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+                  if (widget.role == 'specialist' &&
+                      appointment.status == 'pending') ...[
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: _acceptingAppointmentId == appointment.id
+                          ? null
+                          : () => _acceptAppointment(appointment.id),
+                      child: Text(
+                        _acceptingAppointmentId == appointment.id
+                            ? 'Accepting...'
+                            : 'Accept Appointment',
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -147,5 +200,16 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
         },
       ),
     );
+  }
+}
+
+String _statusLabel(String status) {
+  switch (status) {
+    case 'pending':
+      return 'Pending';
+    case 'accepted':
+      return 'Accepted';
+    default:
+      return status[0].toUpperCase() + status.substring(1);
   }
 }

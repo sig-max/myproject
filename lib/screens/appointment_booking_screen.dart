@@ -96,7 +96,11 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       }
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Appointment booked successfully')),
+        const SnackBar(
+          content: Text(
+            'Appointment request sent. Specialist can accept it within 1 hour.',
+          ),
+        ),
       );
       Navigator.of(context).pop();
     } on ApiException catch (error) {
@@ -125,7 +129,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                   child: ListTile(
                     title: Text(widget.specialist.name),
                     subtitle: Text(
-                      '${_stringOrDefault(profile['specialization'], 'Specialist')} • ${_stringOrDefault(profile['city'], 'Unknown city')}',
+                      '${_stringOrDefault(profile['specialization'], 'Specialist')} - ${_stringOrDefault(profile['city'], 'Unknown city')}',
                     ),
                     trailing: Chip(
                       label: Text(
@@ -177,6 +181,10 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                       ),
                     ),
                   ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Appointments start as pending. If the specialist does not accept within 1 hour, the request will be accepted automatically.',
+                ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _notesController,

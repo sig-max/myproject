@@ -1,5 +1,10 @@
 from app.utils.errors import ValidationError
-from app.utils.validators import validate_list, validate_number, validate_string
+from app.utils.validators import (
+    validate_list,
+    validate_number,
+    validate_phone,
+    validate_string,
+)
 
 
 def validate_update_profile_payload(data) -> dict:
@@ -26,7 +31,7 @@ def validate_update_profile_payload(data) -> dict:
     if "full_name" in data:
         validate_string("full_name", data["full_name"], min_length=2, max_length=120)
     if "phone" in data and data["phone"] is not None:
-        validate_string("phone", data["phone"], min_length=8, max_length=20)
+        validate_phone("phone", data["phone"])
     if "bio" in data and data["bio"] is not None:
         validate_string("bio", data["bio"], min_length=0, max_length=500)
     if "city" in data and data["city"] is not None:

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import 'appointment_booking_screen.dart';
 import '../services/api_service.dart';
+import '../services/chat_service.dart';
 import '../services/specialist_service.dart';
+import 'chat_thread_screen.dart';
 
 class SpecialistDiscoveryScreen extends StatefulWidget {
   const SpecialistDiscoveryScreen({super.key});
@@ -22,6 +24,7 @@ class _SpecialistDiscoveryScreenState extends State<SpecialistDiscoveryScreen> {
   final _minFeeController = TextEditingController();
   final _maxFeeController = TextEditingController();
   late final SpecialistService _service;
+  late final ChatService _chatService;
 
   List<UserModel> _specialists = [];
   bool _isLoading = false;
@@ -31,6 +34,7 @@ class _SpecialistDiscoveryScreenState extends State<SpecialistDiscoveryScreen> {
   void initState() {
     super.initState();
     _service = SpecialistService(ApiService());
+    _chatService = ChatService(ApiService());
     _search();
   }
 
@@ -296,14 +300,29 @@ class _SpecialistDiscoveryScreenState extends State<SpecialistDiscoveryScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Patient-specialist chat comes later.',
+                        onPressed: () async {
+                          try {
+                            final thread =
+                                await _chatService.startThread(specialist.id);
+                            if (!context.mounted) {
+                              return;
+                            }
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ChatThreadScreen(
+                                  thread: thread,
+                                  role: 'patient',
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          } on ApiException catch (error) {
+                            if (!context.mounted) {
+                              return;
+                            }
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(error.message)),
+                            );
+                          }
                         },
                         child: const Text('Start Chat'),
                       ),

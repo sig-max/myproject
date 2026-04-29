@@ -95,6 +95,13 @@ class _SpecialistAvailabilityScreenState
       return;
     }
 
+    final repeatWeekdays = await _pickRepeatWeekdays(
+      initialWeekday: pickedDate.weekday - 1,
+    );
+    if (repeatWeekdays == null || !mounted) {
+      return;
+    }
+
     final startAt = DateTime(
       pickedDate.year,
       pickedDate.month,
@@ -111,12 +118,23 @@ class _SpecialistAvailabilityScreenState
     );
 
     try {
-      await _service.createSlot(startAt: startAt, endAt: endAt);
+      await _service.createSlot(
+        startAt: startAt,
+        endAt: endAt,
+        repeatWeekdays: repeatWeekdays,
+        repeatWeeks: repeatWeekdays.isEmpty ? 1 : 8,
+      );
       if (!mounted) {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Availability slot created')),
+        SnackBar(
+          content: Text(
+            repeatWeekdays.isEmpty
+                ? 'Availability slot created'
+                : 'Recurring availability created for the next 8 weeks',
+          ),
+        ),
       );
       _loadSlots();
     } on ApiException catch (error) {
@@ -127,6 +145,121 @@ class _SpecialistAvailabilityScreenState
         SnackBar(content: Text(error.message)),
       );
     }
+  }
+
+  Future<List<int>?> _pickRepeatWeekdays({
+    required int initialWeekday,
+  }) async {
+    final initialSelection = <int>{initialWeekday};
+    return showModalBottomSheet<List<int>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        var repeatWeekly = false;
+        final selectedDays = <int>{...initialSelection};
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                20 + MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Repeat Availability',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Turn this on if you want the same slot to repeat on selected days, just like a recurring alarm.',
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Repeat weekly'),
+                    subtitle: const Text(
+                      'Create the same slot for selected weekdays',
+                    ),
+                    value: repeatWeekly,
+                    onChanged: (value) {
+                      setModalState(() {
+                        repeatWeekly = value;
+                        if (!repeatWeekly) {
+                          selectedDays
+                            ..clear()
+                            ..add(initialWeekday);
+                        }
+                      });
+                    },
+                  ),
+                  if (repeatWeekly) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: List.generate(_weekdayLabels.length, (index) {
+                        final isSelected = selectedDays.contains(index);
+                        return FilterChip(
+                          label: Text(_weekdayLabels[index]),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setModalState(() {
+                              if (selected) {
+                                selectedDays.add(index);
+                              } else {
+                                selectedDays.remove(index);
+                              }
+                            });
+                          },
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'We will create upcoming slots for the next 8 weeks on these days.',
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () {
+                        if (repeatWeekly && selectedDays.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Select at least one day for recurring availability',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        final List<int> result;
+                        if (repeatWeekly) {
+                          result = selectedDays.toList();
+                          result.sort();
+                        } else {
+                          result = <int>[];
+                        }
+                        Navigator.of(context).pop(
+                          result,
+                        );
+                      },
+                      child: const Text('Save Availability'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -151,7 +284,13 @@ class _SpecialistAvailabilityScreenState
     }
     if (_slots.isEmpty) {
       return const Center(
-        child: Text('No slots created yet. Add your first available slot.'),
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'No slots created yet. Add your first availability slot or create a recurring weekly schedule.',
+            textAlign: TextAlign.center,
+          ),
+        ),
       );
     }
 
@@ -166,7 +305,9 @@ class _SpecialistAvailabilityScreenState
           return Card(
             child: ListTile(
               leading: Icon(
-                slot.isBooked ? Icons.event_busy_outlined : Icons.event_available,
+                slot.isBooked
+                    ? Icons.event_busy_outlined
+                    : Icons.event_available,
               ),
               title: Text(DateFormat('EEE, d MMM yyyy').format(slot.startAt)),
               subtitle: Text(
@@ -182,3 +323,13 @@ class _SpecialistAvailabilityScreenState
     );
   }
 }
+
+const List<String> _weekdayLabels = <String>[
+  'Mon',
+  'Tue',
+  'Wed',
+  'Thu',
+  'Fri',
+  'Sat',
+  'Sun',
+];

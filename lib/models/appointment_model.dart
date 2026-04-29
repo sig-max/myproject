@@ -1,3 +1,5 @@
+import '../utils/api_datetime.dart';
+
 class AppointmentModel {
   const AppointmentModel({
     required this.id,
@@ -11,6 +13,8 @@ class AppointmentModel {
     this.specialistName,
     this.slotStartAt,
     this.slotEndAt,
+    this.autoAcceptAt,
+    this.acceptedAt,
   });
 
   final String id;
@@ -24,6 +28,8 @@ class AppointmentModel {
   final String? specialistName;
   final DateTime? slotStartAt;
   final DateTime? slotEndAt;
+  final DateTime? autoAcceptAt;
+  final DateTime? acceptedAt;
 
   factory AppointmentModel.fromJson(Map<String, dynamic> json) {
     final slot = json['slot'] is Map<String, dynamic>
@@ -35,16 +41,22 @@ class AppointmentModel {
       slotId: (json['slot_id'] ?? '').toString(),
       patientUserId: (json['patient_user_id'] ?? '').toString(),
       specialistUserId: (json['specialist_user_id'] ?? '').toString(),
-      status: (json['status'] ?? 'booked').toString(),
+      status: (json['status'] ?? 'pending').toString(),
       notes: (json['notes'] ?? '').toString(),
-      createdAt: DateTime.parse((json['created_at'] ?? '').toString()).toLocal(),
+      createdAt: parseApiDateTime(json['created_at']),
       patientName: json['patient_name']?.toString(),
       specialistName: json['specialist_name']?.toString(),
       slotStartAt: slot['start_at'] != null
-          ? DateTime.parse(slot['start_at'].toString()).toLocal()
+          ? parseApiDateTime(slot['start_at'])
           : null,
       slotEndAt: slot['end_at'] != null
-          ? DateTime.parse(slot['end_at'].toString()).toLocal()
+          ? parseApiDateTime(slot['end_at'])
+          : null,
+      autoAcceptAt: json['auto_accept_at'] != null
+          ? parseApiDateTime(json['auto_accept_at'])
+          : null,
+      acceptedAt: json['accepted_at'] != null
+          ? parseApiDateTime(json['accepted_at'])
           : null,
     );
   }

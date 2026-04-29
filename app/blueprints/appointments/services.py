@@ -1,4 +1,5 @@
 from app.blueprints.appointments.models import (
+    accept_appointment as accept_appointment_model,
     create_appointment_booking as create_appointment_booking_model,
     create_appointment_slot as create_appointment_slot_model,
     list_my_appointments as list_my_appointments_model,
@@ -16,8 +17,16 @@ def create_appointment_slot(current_user_id: str, payload: dict) -> dict:
         raise APIError("Only specialists can create appointment slots", status_code=403)
 
     slot = create_appointment_slot_model(current_user_id, payload)
+    if slot is None:
+        raise APIError("Specialist not found", status_code=404)
     if slot == "overlap":
         raise APIError("This slot overlaps an existing availability slot", status_code=409)
+    if "items" in slot:
+        return {
+            "items": [_serialize_appointment_payload(item) for item in slot["items"]],
+            "created_count": slot["created_count"],
+            "had_overlap": slot["had_overlap"],
+        }
     return _serialize_appointment_payload(slot)
 
 
@@ -45,6 +54,8 @@ def create_appointment_booking(current_user_id: str, payload: dict) -> dict:
         raise APIError("Appointment slot not found", status_code=404)
     if appointment == "already_booked":
         raise APIError("Appointment slot is already booked", status_code=409)
+    if appointment == "expired":
+        raise APIError("Appointment slot is no longer available", status_code=409)
 
     return _serialize_appointment_payload(appointment)
 
@@ -56,6 +67,22 @@ def list_my_appointments(current_user_id: str) -> list[dict]:
 
     appointments = list_my_appointments_model(current_user_id, current_user.get("role", "patient"))
     return [_serialize_appointment_payload(item) for item in appointments]
+
+
+def accept_appointment(current_user_id: str, appointment_id: str) -> dict:
+    current_user = get_user_by_id(current_user_id)
+    if not current_user or current_user.get("role") != "specialist":
+        raise APIError("Only specialists can accept appointments", status_code=403)
+
+    appointment = accept_appointment_model(current_user_id, appointment_id)
+    if appointment is None:
+        raise APIError("Appointment not found", status_code=404)
+    if appointment == "forbidden":
+        raise APIError("You can only accept your own appointments", status_code=403)
+    if appointment == "invalid_status":
+        raise APIError("Only pending appointments can be accepted", status_code=409)
+
+    return _serialize_appointment_payload(appointment)
 
 
 def _serialize_appointment_payload(document: dict) -> dict:

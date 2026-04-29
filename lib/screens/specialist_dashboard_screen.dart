@@ -2,9 +2,14 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/specialist_analytics_model.dart';
 import '../providers/auth_provider.dart';
+import '../services/analytics_service.dart';
+import '../services/api_service.dart';
 import 'appointment_history_screen.dart';
+import 'chat_thread_list_screen.dart';
 import 'login_screen.dart';
+import 'specialist_home_samples_screen.dart';
 import 'specialist_availability_screen.dart';
 import 'specialist_profile_screen.dart';
 
@@ -29,11 +34,11 @@ class SpecialistDashboardScreen extends StatelessWidget {
     final user = auth.user;
     final profile = user?.profile ?? const <String, dynamic>{};
     final consultationFee = _asNum(profile['consultation_fee']);
-    final patientsConsulted = _asNum(profile['patients_consulted']).toInt();
     final isVerified = profile['is_verified'] == true;
     final hasActiveSlots =
         (profile['availability_summary'] as Map<String, dynamic>?)?['has_active_slots'] ==
             true;
+    final analyticsService = AnalyticsService(ApiService());
 
     return Scaffold(
       appBar: AppBar(
@@ -46,87 +51,131 @@ class SpecialistDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _HeroHeader(
-            name: user?.name ?? 'Specialist',
-            email: user?.email ?? '',
-            specialization:
-                _stringOrFallback(profile['specialization'], 'Add specialization later'),
-            isVerified: isVerified,
-            onEditProfile: () {
-              Navigator.of(context).pushNamed(SpecialistProfileScreen.routeName);
-            },
-          ),
-          const SizedBox(height: 16),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.5,
+      body: FutureBuilder<SpecialistAnalyticsModel>(
+        future: analyticsService.fetchSpecialistAnalytics(),
+        builder: (context, snapshot) {
+          final analytics = snapshot.data;
+          final summary = analytics?.summary ?? const <String, int>{};
+          final patientsConsulted = summary['patients_consulted'] ?? 0;
+          final bookedAppointments = summary['appointments_booked'] ?? 0;
+          final chatThreads = summary['chat_threads'] ?? 0;
+          final pendingSamples = summary['pending_home_samples'] ?? 0;
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
             children: [
-              _MetricCard(
-                title: 'Patients Consulted',
-                value: '$patientsConsulted',
-                subtitle: 'Total patient conversations',
-                icon: Icons.groups_2_outlined,
+              _HeroHeader(
+                name: user?.name ?? 'Specialist',
+                email: user?.email ?? '',
+                specialization:
+                    _stringOrFallback(profile['specialization'], 'Add specialization later'),
+                isVerified: isVerified,
+                onEditProfile: () {
+                  Navigator.of(context).pushNamed(SpecialistProfileScreen.routeName);
+                },
               ),
-              _MetricCard(
-                title: 'Consultation Fee',
-                value: 'Rs. ${consultationFee.toStringAsFixed(0)}',
-                subtitle: 'Per patient session',
-                icon: Icons.currency_rupee,
+              const SizedBox(height: 16),
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (snapshot.hasError)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Unable to load analytics right now. Dashboard actions are still available.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  ),
+                ),
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.5,
+                children: [
+                  _MetricCard(
+                    title: 'Patients Consulted',
+                    value: '$patientsConsulted',
+                    subtitle: 'Unique patients across chats and bookings',
+                    icon: Icons.groups_2_outlined,
+                  ),
+                  _MetricCard(
+                    title: 'Consultation Fee',
+                    value: 'Rs. ${consultationFee.toStringAsFixed(0)}',
+                    subtitle: 'Per patient session',
+                    icon: Icons.currency_rupee,
+                  ),
+                  _MetricCard(
+                    title: 'Appointments',
+                    value: '$bookedAppointments',
+                    subtitle: 'Total booked appointments',
+                    icon: Icons.event_note_outlined,
+                  ),
+                  _MetricCard(
+                    title: 'Pending Tests',
+                    value: '$pendingSamples',
+                    subtitle: 'Home sample requests needing action',
+                    icon: Icons.science_outlined,
+                  ),
+                  _MetricCard(
+                    title: 'Patient Chats',
+                    value: '$chatThreads',
+                    subtitle: 'Active conversation threads',
+                    icon: Icons.chat_bubble_outline,
+                  ),
+                  _MetricCard(
+                    title: 'Availability',
+                    value: hasActiveSlots ? 'Open' : 'Closed',
+                    subtitle: 'Slot setup status',
+                    icon: Icons.calendar_month_outlined,
+                  ),
+                ],
               ),
-              _MetricCard(
-                title: 'Availability',
-                value: hasActiveSlots ? 'Open' : 'Closed',
-                subtitle: 'Slot setup status',
-                icon: Icons.calendar_month_outlined,
+              const SizedBox(height: 20),
+              const _SectionTitle(
+                title: 'Progress Graph',
+                subtitle: 'Appointments, follow-ups, and completed tests',
               ),
-              _MetricCard(
-                title: 'Verification',
-                value: isVerified ? 'Verified' : 'Pending',
-                subtitle: 'Certificate review comes later',
-                icon: Icons.verified_user_outlined,
+              const SizedBox(height: 12),
+              _ProgressLineChart(points: analytics?.lineChart ?? const []),
+              const SizedBox(height: 20),
+              const _SectionTitle(
+                title: 'Monthly Progress',
+                subtitle: 'Current month breakdown',
               ),
+              const SizedBox(height: 12),
+              _ProgressPieChart(
+                title: 'Monthly Progress Status',
+                breakdown: analytics?.monthlyBreakdown ?? const {},
+              ),
+              const SizedBox(height: 20),
+              const _SectionTitle(
+                title: 'Yearly Progress',
+                subtitle: 'This year at a glance',
+              ),
+              const SizedBox(height: 12),
+              _ProgressPieChart(
+                title: 'Yearly Progress Status',
+                breakdown: analytics?.yearlyBreakdown ?? const {},
+              ),
+              const SizedBox(height: 20),
+              const _SectionTitle(
+                title: 'Profile Snapshot',
+                subtitle: 'Role-specific data stored in specialist_profiles',
+              ),
+              const SizedBox(height: 12),
+              _ProfileCard(profile: profile),
             ],
-          ),
-          const SizedBox(height: 20),
-          const _SectionTitle(
-            title: 'Progress Graph',
-            subtitle: 'Appointment completion and follow-up trend',
-          ),
-          const SizedBox(height: 12),
-          const _ProgressLineChart(),
-          const SizedBox(height: 20),
-          const _SectionTitle(
-            title: 'Monthly Progress',
-            subtitle: 'Current month breakdown',
-          ),
-          const SizedBox(height: 12),
-          const _ProgressPieChart(
-            title: 'Monthly Progress Status',
-          ),
-          const SizedBox(height: 20),
-          const _SectionTitle(
-            title: 'Yearly Progress',
-            subtitle: 'This year at a glance',
-          ),
-          const SizedBox(height: 12),
-          const _ProgressPieChart(
-            title: 'Yearly Progress Status',
-          ),
-          const SizedBox(height: 20),
-          const _SectionTitle(
-            title: 'Profile Snapshot',
-            subtitle: 'Role-specific data stored in specialist_profiles',
-          ),
-          const SizedBox(height: 12),
-          _ProfileCard(profile: profile),
-        ],
+          );
+        },
       ),
     );
   }
@@ -249,6 +298,29 @@ class _HeroHeader extends StatelessWidget {
             icon: const Icon(Icons.receipt_long_outlined),
             label: const Text('View Appointments'),
           ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pushNamed(
+                SpecialistHomeSamplesScreen.routeName,
+              );
+            },
+            icon: const Icon(Icons.biotech_outlined),
+            label: const Text('Home Sample Requests'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const ChatThreadListScreen(role: 'specialist'),
+                ),
+              );
+            },
+            icon: const Icon(Icons.chat_bubble_outline),
+            label: const Text('Patient Chats'),
+          ),
         ],
       ),
     );
@@ -339,19 +411,36 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _ProgressLineChart extends StatelessWidget {
-  const _ProgressLineChart();
+  const _ProgressLineChart({
+    required this.points,
+  });
+
+  final List<SpecialistProgressPoint> points;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const points = [
-      FlSpot(0, 0),
-      FlSpot(1, 0),
-      FlSpot(2, 0),
-      FlSpot(3, 0),
-      FlSpot(4, 0),
-      FlSpot(5, 0),
-    ];
+    final chartSpots = points.isEmpty
+        ? const [
+            FlSpot(0, 0),
+            FlSpot(1, 0),
+            FlSpot(2, 0),
+            FlSpot(3, 0),
+            FlSpot(4, 0),
+            FlSpot(5, 0),
+          ]
+        : [
+            for (int index = 0; index < points.length; index++)
+              FlSpot(index.toDouble(), points[index].progressScore.toDouble()),
+          ];
+    final maxProgress = points.isEmpty
+        ? 5.0
+        : (points
+                    .map((item) => item.progressScore)
+                    .reduce((a, b) => a > b ? a : b)
+                    .toDouble() +
+                1)
+            .clamp(5.0, 1000000.0);
 
     return Card(
       elevation: 0,
@@ -365,7 +454,7 @@ class _ProgressLineChart extends StatelessWidget {
               child: LineChart(
                 LineChartData(
                   minY: 0,
-                  maxY: 5,
+                  maxY: maxProgress,
                   gridData: const FlGridData(show: true),
                   borderData: FlBorderData(show: false),
                   titlesData: FlTitlesData(
@@ -379,7 +468,9 @@ class _ProgressLineChart extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                          final labels = points.isEmpty
+                              ? const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+                              : points.map((item) => item.label).toList();
                           final index = value.toInt();
                           if (index < 0 || index >= labels.length) {
                             return const SizedBox.shrink();
@@ -394,14 +485,14 @@ class _ProgressLineChart extends StatelessWidget {
                   ),
                   lineBarsData: [
                     LineChartBarData(
-                      spots: points,
+                      spots: chartSpots,
                       isCurved: true,
                       barWidth: 4,
                       color: theme.colorScheme.primary,
                       dotData: const FlDotData(show: true),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: theme.colorScheme.primary.withOpacity(0.12),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
                       ),
                     ),
                   ],
@@ -410,7 +501,9 @@ class _ProgressLineChart extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'No specialist progress records yet. We will connect this chart to real appointment, follow-up, and test data in the next backend phase.',
+              points.isEmpty
+                  ? 'No specialist progress records yet.'
+                  : 'Progress score combines appointments, follow-up chats, and completed home sample requests.',
               style: theme.textTheme.bodySmall,
             ),
           ],
@@ -423,13 +516,24 @@ class _ProgressLineChart extends StatelessWidget {
 class _ProgressPieChart extends StatelessWidget {
   const _ProgressPieChart({
     required this.title,
+    required this.breakdown,
   });
 
   final String title;
+  final Map<String, int> breakdown;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final items = breakdown.entries
+        .where((entry) => entry.value > 0)
+        .toList(growable: false);
+    final colors = [
+      theme.colorScheme.primary,
+      theme.colorScheme.secondary,
+      theme.colorScheme.tertiary,
+      theme.colorScheme.error,
+    ];
 
     return Card(
       elevation: 0,
@@ -447,44 +551,78 @@ class _ProgressPieChart extends StatelessWidget {
             const SizedBox(height: 12),
             SizedBox(
               height: 220,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: PieChart(
-                      PieChartData(
-                        centerSpaceRadius: 44,
-                        sectionsSpace: 3,
-                        sections: [
-                          PieChartSectionData(
-                            value: 100,
-                            title: '',
-                            radius: 54,
-                            color: theme.colorScheme.outlineVariant,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+              child: items.isEmpty
+                  ? Row(
                       children: [
-                        _LegendRow(
-                          color: theme.colorScheme.outlineVariant,
-                          title: 'No records yet',
-                          value: '0',
+                        Expanded(
+                          child: PieChart(
+                            PieChartData(
+                              centerSpaceRadius: 44,
+                              sectionsSpace: 3,
+                              sections: [
+                                PieChartSectionData(
+                                  value: 100,
+                                  title: '',
+                                  radius: 54,
+                                  color: theme.colorScheme.outlineVariant,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'The pie chart will use real specialist analytics once we add appointments and home test workflow tables.',
-                          style: theme.textTheme.bodySmall,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _LegendRow(
+                                color: theme.colorScheme.outlineVariant,
+                                title: 'No records yet',
+                                value: '0',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: PieChart(
+                            PieChartData(
+                              centerSpaceRadius: 44,
+                              sectionsSpace: 3,
+                              sections: [
+                                for (int i = 0; i < items.length; i++)
+                                  PieChartSectionData(
+                                    value: items[i].value.toDouble(),
+                                    title: '',
+                                    radius: 54,
+                                    color: colors[i % colors.length],
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (int i = 0; i < items.length; i++) ...[
+                                _LegendRow(
+                                  color: colors[i % colors.length],
+                                  title: _labelize(items[i].key),
+                                  value: items[i].value.toString(),
+                                ),
+                                if (i != items.length - 1)
+                                  const SizedBox(height: 12),
+                              ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),
@@ -617,4 +755,11 @@ String _joinList(dynamic value) {
     }
   }
   return 'Not added yet';
+}
+
+String _labelize(String value) {
+  return value
+      .split('_')
+      .map((part) => part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
 }

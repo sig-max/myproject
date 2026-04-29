@@ -1,3 +1,5 @@
+import '../utils/api_datetime.dart';
+
 class AppointmentSlotModel {
   const AppointmentSlotModel({
     required this.id,
@@ -17,8 +19,8 @@ class AppointmentSlotModel {
     return AppointmentSlotModel(
       id: (json['id'] ?? json['_id'] ?? '').toString(),
       specialistUserId: (json['specialist_user_id'] ?? '').toString(),
-      startAt: DateTime.parse((json['start_at'] ?? '').toString()).toLocal(),
-      endAt: DateTime.parse((json['end_at'] ?? '').toString()).toLocal(),
+      startAt: parseApiDateTime(json['start_at']),
+      endAt: parseApiDateTime(json['end_at']),
       isBooked: json['is_booked'] == true,
     );
   }

@@ -1,9 +1,12 @@
 from flask import Flask, jsonify
 from flask_jwt_extended import JWTManager
 
+from app.blueprints.analytics.routes import analytics_bp
 from app.blueprints.appointments.routes import appointments_bp
 from app.blueprints.auth.routes import auth_bp
+from app.blueprints.chats.routes import chats_bp
 from app.blueprints.expenses.routes import expenses_bp
+from app.blueprints.home_samples.routes import home_samples_bp
 from app.blueprints.intake_logs.routes import intake_logs_bp
 from app.blueprints.medicines.routes import medicines_bp
 from app.blueprints.reminders.routes import reminders_bp
@@ -22,7 +25,10 @@ def register_core_routes(app: Flask) -> None:
 def register_blueprints(app: Flask) -> None:
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
     app.register_blueprint(users_bp, url_prefix="/api/v1/users")
+    app.register_blueprint(analytics_bp, url_prefix="/api/v1/analytics")
     app.register_blueprint(appointments_bp, url_prefix="/api/v1/appointments")
+    app.register_blueprint(chats_bp, url_prefix="/api/v1/chats")
+    app.register_blueprint(home_samples_bp, url_prefix="/api/v1/home-samples")
     app.register_blueprint(medicines_bp, url_prefix="/api/v1/medicines")
     app.register_blueprint(reminders_bp, url_prefix="/api/v1/reminders")
     app.register_blueprint(intake_logs_bp, url_prefix="/api/v1/intake-logs")

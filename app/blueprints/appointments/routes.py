@@ -2,10 +2,12 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app.blueprints.appointments.schemas import (
+    validate_accept_appointment_payload,
     validate_create_booking_payload,
     validate_create_slot_payload,
 )
 from app.blueprints.appointments.services import (
+    accept_appointment,
     create_appointment_booking,
     create_appointment_slot,
     list_current_specialist_slots,
@@ -24,6 +26,8 @@ def create_slot():
     current_user_id = get_jwt_identity()
     payload = validate_create_slot_payload(request.get_json(silent=True))
     slot = create_appointment_slot(current_user_id, payload)
+    if "items" in slot:
+        return jsonify(slot), 201
     return jsonify({"slot": slot}), 201
 
 
@@ -61,3 +65,12 @@ def get_my_appointments():
     current_user_id = get_jwt_identity()
     appointments = list_my_appointments(current_user_id)
     return jsonify({"items": appointments}), 200
+
+
+@appointments_bp.put("/<appointment_id>/accept")
+@jwt_required()
+def accept_appointment_route(appointment_id: str):
+    current_user_id = get_jwt_identity()
+    validate_accept_appointment_payload(request.get_json(silent=True))
+    appointment = accept_appointment(current_user_id, appointment_id)
+    return jsonify({"item": appointment}), 200

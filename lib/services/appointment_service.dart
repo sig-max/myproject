@@ -54,12 +54,16 @@ class AppointmentService {
   Future<void> createSlot({
     required DateTime startAt,
     required DateTime endAt,
+    List<int> repeatWeekdays = const [],
+    int repeatWeeks = 1,
   }) async {
     await _apiService.post(
       '/appointments/slots',
       body: {
         'start_at': startAt.toUtc().toIso8601String(),
         'end_at': endAt.toUtc().toIso8601String(),
+        'repeat_weekdays': repeatWeekdays,
+        'repeat_weeks': repeatWeeks,
       },
     );
   }
@@ -92,5 +96,9 @@ class AppointmentService {
         .whereType<Map>()
         .map((item) => AppointmentModel.fromJson(Map<String, dynamic>.from(item)))
         .toList();
+  }
+
+  Future<void> acceptAppointment(String appointmentId) async {
+    await _apiService.put('/appointments/$appointmentId/accept', body: const {});
   }
 }

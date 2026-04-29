@@ -70,6 +70,42 @@ def initialize_indexes() -> None:
         [("patient_user_id", 1), ("created_at", -1)],
         name="appointments_patient_created_idx",
     )
+    _safe_create_index(
+        db["appointments"],
+        [("status", 1), ("auto_accept_at", 1)],
+        name="appointments_status_auto_accept_idx",
+    )
+    _safe_create_index(
+        db["home_sample_requests"],
+        [("patient_user_id", 1), ("created_at", -1)],
+        name="home_sample_requests_patient_created_idx",
+    )
+    _safe_create_index(
+        db["home_sample_requests"],
+        [("specialist_user_id", 1), ("created_at", -1)],
+        name="home_sample_requests_specialist_created_idx",
+    )
+    _safe_create_index(
+        db["home_sample_requests"],
+        [("status", 1), ("created_at", -1)],
+        name="home_sample_requests_status_created_idx",
+    )
+    _safe_create_index(
+        db["chat_threads"],
+        [("patient_user_id", 1), ("specialist_user_id", 1)],
+        unique=True,
+        name="chat_threads_patient_specialist_unique_idx",
+    )
+    _safe_create_index(
+        db["chat_threads"],
+        [("updated_at", -1)],
+        name="chat_threads_updated_idx",
+    )
+    _safe_create_index(
+        db["chat_messages"],
+        [("thread_id", 1), ("created_at", 1)],
+        name="chat_messages_thread_created_idx",
+    )
 
 
 def _safe_create_index(collection, keys, **kwargs) -> None:
