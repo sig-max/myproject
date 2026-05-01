@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: medical-management-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB_NAME
+        value: medical_store
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false

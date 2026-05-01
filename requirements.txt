@@ -6,3 +6,4 @@ Flask-Bcrypt==1.0.1
 python-dotenv==1.0.1
 pymongo==4.11.1
 certifi==2026.02.25
+gunicorn==23.0.0
