@@ -3,7 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'flavor_config.dart';
 
 class ApiConfig {
-  static const String apiBaseUrl = 'http://localhost:5000';
+  static const String _renderBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://myproject-xfbc.onrender.com',
+  );
+
+  static const String apiBaseUrl = _renderBaseUrl;
   static const String apiV1Local = '$apiBaseUrl/api/v1';
 
   static const String _overrideBaseUrl = String.fromEnvironment(
@@ -18,10 +23,9 @@ class ApiConfig {
 
     switch (FlavorConfig.flavor) {
       case AppFlavor.prod:
-        return 'https://your-production-domain.com';
+        return _renderBaseUrl;
       case AppFlavor.dev:
-        // Web cannot reach Android emulator loopback (10.0.2.2).
-        // Use localhost on web and keep emulator host for mobile dev.
+        // Keep the emulator host for local development.
         return kIsWeb ? apiBaseUrl : 'http://10.0.2.2:5000';
     }
   }
